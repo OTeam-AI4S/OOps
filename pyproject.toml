@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-  "setuptools",
+  "setuptools>=77",
   "setuptools-scm",
 ]
 
@@ -16,6 +16,8 @@ keywords = [
   "protein",
   "rna",
 ]
+license = "LicenseRef-OOps-Proprietary"
+license-files = [ "LICENSE" ]
 maintainers = [
   { name = "Zhiyuan Chen", email = "this@zyc.ai" },
 ]
@@ -29,6 +31,7 @@ classifiers = [
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
   "Operating System :: POSIX :: Linux",
+  "Private :: Do Not Upload",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
