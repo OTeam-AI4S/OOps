@@ -1,0 +1,90 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools",
+  "setuptools-scm",
+]
+
+[project]
+name = "ooperators"
+description = "Operator backends for biomolecular neural models"
+keywords = [
+  "deep-learning",
+  "dna",
+  "machine-learning",
+  "protein",
+  "rna",
+]
+maintainers = [
+  { name = "Zhiyuan Chen", email = "this@zyc.ai" },
+]
+authors = [
+  { name = "Zhiyuan Chen", email = "this@zyc.ai" },
+]
+requires-python = ">=3.12"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dynamic = [
+  "version",
+]
+dependencies = [
+  "torch>=2.13",
+  "triton",
+]
+urls.homepage = "https://github.com/valhalla-engineering/OOps"
+urls.issues = "https://github.com/valhalla-engineering/OOps/issues"
+urls.repository = "https://github.com/valhalla-engineering/OOps"
+
+[tool.setuptools]
+packages.find.include = [ "oops*" ]
+package-data.oops = [ "py.typed" ]
+
+[tool.setuptools_scm]
+write_to = "oops/_version.py"
+
+[tool.black]
+line-length = 120
+target-version = [ "py312" ]
+
+[tool.isort]
+line_length = 120
+profile = "black"
+
+[tool.flake8]
+max-line-length = 120
+
+[tool.pylint]
+format.max-line-length = 120
+main.fail-under = 9.8
+messages_control.disable = """
+  E0012,
+  E0401,
+  R0201,
+  R0801,
+"""
+reports.output-format = "colorized"
+
+[tool.mypy]
+ignore_missing_imports = true
+python_version = "3.12"
+
+[tool.pytest]
+ini_options.addopts = "--doctest-modules --cov=oops"
+
+[tool.coverage]
+run.branch = true
+run.source = [ "oops" ]
+paths.source = [ "oops", "*/site-packages/oops" ]
+report.show_missing = true
+json.output = "coverage.json"
+xml.output = "coverage.xml"

@@ -1,0 +1,4 @@
+[flake8]
+max-line-length = 120
+# Explicit ignore replaces default exemptions; E704 permits one-line Protocol stubs.
+ignore = E203,E704,W503,W504
