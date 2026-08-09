@@ -41,6 +41,10 @@ dependencies = [
   "torch>=2.13",
   "triton",
 ]
+optional-dependencies.test = [
+  "pytest",
+  "pytest-cov",
+]
 urls.homepage = "https://github.com/valhalla-engineering/OOps"
 urls.issues = "https://github.com/valhalla-engineering/OOps/issues"
 urls.repository = "https://github.com/valhalla-engineering/OOps"
@@ -80,6 +84,8 @@ python_version = "3.12"
 
 [tool.pytest]
 ini_options.addopts = "--doctest-modules --cov=oops"
+ini_options.testpaths = [ "tests" ]
+ini_options.markers = [ "cuda_device(index): Select the CUDA device for one behavior case." ]
 
 [tool.coverage]
 run.branch = true
