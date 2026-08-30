@@ -8,6 +8,7 @@ requires = [
 [project]
 name = "ooperators"
 description = "Operator backends for biomolecular neural models"
+readme = "README.md"
 keywords = [
   "deep-learning",
   "dna",
