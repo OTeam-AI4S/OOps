@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "ooperators"
-description = "Operator backends for biomolecular neural models"
+description = "More OOps, zero OOMs: Scaling Computation for Molecular Worlds."
 readme = "README.md"
 keywords = [
   "deep-learning",
@@ -16,8 +16,8 @@ keywords = [
   "protein",
   "rna",
 ]
-license = "LicenseRef-OOps-Proprietary"
-license-files = [ "LICENSE" ]
+license = "AGPL-3.0-or-later"
+license-files = [ "license.md", "license.zh.md", "license-faq.md", "license-faq.zh.md", "privacy.md", "privacy.zh.md" ]
 maintainers = [
   { name = "Zhiyuan Chen", email = "this@zyc.ai" },
 ]
@@ -31,7 +31,6 @@ classifiers = [
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
   "Operating System :: POSIX :: Linux",
-  "Private :: Do Not Upload",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -42,24 +41,23 @@ dynamic = [
   "version",
 ]
 dependencies = [
+  "danling>=0.4.6",
   "torch>=2.13",
   "triton",
 ]
 optional-dependencies.docs = [
   "markdown-gfm-admonition",
   "mkdocs>=1.4",
-  "mkdocs-autorefs",
   "mkdocs-material",
   "mkdocs-static-i18n",
-  "mkdocstrings[python]",
 ]
 optional-dependencies.test = [
   "pytest",
   "pytest-cov",
 ]
-urls.homepage = "https://github.com/valhalla-engineering/OOps"
-urls.issues = "https://github.com/valhalla-engineering/OOps/issues"
-urls.repository = "https://github.com/valhalla-engineering/OOps"
+urls.homepage = "https://oops.valhalla.technology/"
+urls.issues = "https://github.com/OTeam-AI4S/OOps/issues"
+urls.repository = "https://github.com/OTeam-AI4S/OOps"
 
 [tool.setuptools]
 packages.find.include = [ "oops*" ]

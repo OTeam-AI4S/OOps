@@ -1,23 +1,18 @@
 # OOps
 
-> [!TIP]
-> 将生物分子建模加速到硬件极限。
-
-[![许可证：专有](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-
-OOps 是 OFoldX 使用的算子库。
-它将注意力、三角更新等生物分子模型中的主要计算实现为支持训练和推理的高性能 PyTorch 算子。
+OOps 是一个高性能 GPU 算子库，旨在加速 OFold、ODesign 等生物分子基础模型。
+OOps 充分发挥硬件效率，显著加速训练和推理，突破超长序列的显存瓶颈，让 GPU 在常规框架显存不足的场景下继续运行。
 
 ## 安装
 
 ```shell
-pip install git+https://github.com/valhalla-engineering/OOps
+pip install ooperators
 ```
 
 ## 许可证
 
-OOps 属于保密的专有软件。
-任何使用、复制或分发均须获得 Valhalla Technology 的书面授权；
-详见 [LICENSE](LICENSE)。
+OOps 使用 [GNU Affero General Public License v3.0 或更新版本](license.zh.md)。商业许可请参阅[许可协议常见问题](license-faq.zh.md)。
 
-`SPDX-License-Identifier: LicenseRef-OOps-Proprietary`
+## 隐私
+
+OOps 文档网站的数据处理信息请参阅[隐私声明](privacy.zh.md)。

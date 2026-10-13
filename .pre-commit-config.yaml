@@ -59,8 +59,14 @@ repos:
       - id: check-xml
       - id: check-toml
       - id: check-yaml
+        exclude: ^mkdocs\.yml$
+      - id: check-yaml
+        name: check MkDocs YAML
+        files: ^mkdocs\.yml$
+        args: [--unsafe]
       - id: debug-statements
       - id: end-of-file-fixer
+        exclude: ^license(?:\.zh)?\.md$
       - id: fix-byte-order-marker
       - id: mixed-line-ending
         args: ["--fix=lf"]
