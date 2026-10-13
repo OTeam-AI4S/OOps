@@ -39,3 +39,7 @@ pip install git+https://github.com/OTeam-AI4S/OOps
 }
 ```
 
+## License
+
+OOps is distributed under the [AGPL-3.0-or-later license](license.md); the [License FAQ](license-faq.md)
+covers additional terms.

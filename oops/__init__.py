@@ -19,16 +19,9 @@
 # For additional terms and clarifications, please refer to our License FAQ at:
 # <https://oops.valtech.ai/about/license-faq/>.
 
-r"""
-Operator backends for biomolecular neural models.
-"""
-
-from __future__ import annotations
-
-from ._errors import OOpsUnsupportedError
+from ._edition import _warn_internal_users
 from ._version import __version__
 
-__all__ = [
-    "OOpsUnsupportedError",
-    "__version__",
-]
+__all__ = ["__version__"]
+
+_warn_internal_users()

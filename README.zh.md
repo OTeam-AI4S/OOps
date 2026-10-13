@@ -38,3 +38,6 @@ pip install git+https://github.com/OTeam-AI4S/OOps
 }
 ```
 
+## 许可
+
+OOps 使用 [AGPL-3.0-or-later 许可证](license.md)，附加条款见[许可协议常见问题](license-faq.md)。
