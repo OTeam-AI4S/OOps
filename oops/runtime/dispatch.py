@@ -616,6 +616,14 @@ def autograd_function_active(
     return any(key in differentiation for key in keys) or forward_ad._current_level >= 0
 
 
+def require_shape(condition: bool, message: str) -> None:
+    r"""Validate a shape relation without specializing data-dependent dimensions."""
+    if is_compiling():
+        torch._check(condition)
+    elif not condition:
+        raise ValueError(message)
+
+
 def require_no_forward_mode(operator: str, *tensors: Tensor | None) -> None:
     r"""Raise ``OOpsUnsupportedError`` if forward-mode AD is active."""
 
