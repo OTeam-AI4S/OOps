@@ -453,3 +453,6 @@ FodyWeavers.xsd
 
 # debug files
 **/*debug*
+
+# Documentation
+site/
