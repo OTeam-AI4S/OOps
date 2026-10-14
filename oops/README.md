@@ -14,6 +14,7 @@ atoms, or sparse edges. Public functions can be imported from `oops` or their fa
 | [Sparse](sparse/README.md)               | Group edges and aggregate features within CSR rows.           |
 | [Equivariant](equivariant/README.md)     | Build spherical-harmonic features and SE(3) bases.            |
 | [Losses](losses/README.md)               | Compute classification or structural objectives.              |
+| [Mask](mask/README.md)                   | Convert MSA/token validity into boolean masks.                |
 
 ## OFoldX Integration
 
