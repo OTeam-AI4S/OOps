@@ -40,3 +40,9 @@ Both smooth-LDDT losses return one when no valid or selected pairs remain.
 | `smooth_lddt_loss_sparse`    | Compare an explicit selected pair set.                            |
 | `smooth_lddt_pair_indices`   | Reuse a boolean pair mask as an ordered index list.               |
 | `smooth_lddt_pair_distances` | Compute differentiable distances for a pair list.                 |
+
+## Related API
+
+Prepare validity with [masks](../mask/README.md), compute positions and distances with
+[geometry](../geometry/README.md), and aggregate observations with [weighted reduction](../reduction/README.md).
+See the [operator overview](../README.md).
