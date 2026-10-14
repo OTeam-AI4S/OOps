@@ -5,11 +5,12 @@ atoms, or sparse edges. Public functions can be imported from `oops` or their fa
 
 ## Operator Map
 
-| Family                                   | When to Use                                              |
-| ---------------------------------------- | -------------------------------------------------------- |
-| [Attention](attention/README.md)         | Attend to token features or pair-feature rows.           |
-| [Pair](pair/README.md)                   | Build incoming or outgoing triangle updates.             |
-| [Normalization](normalization/README.md) | Normalize feature channels through a module or function. |
+| Family                                   | When to Use                                                   |
+| ---------------------------------------- | ------------------------------------------------------------- |
+| [Attention](attention/README.md)         | Attend to token features or pair-feature rows.                |
+| [Pair](pair/README.md)                   | Build incoming or outgoing triangle updates.                  |
+| [Normalization](normalization/README.md) | Normalize feature channels through a module or function.      |
+| [Atom](atom/README.md)                   | Transfer between atom/token features and gather atom windows. |
 
 ## OFoldX Integration
 
