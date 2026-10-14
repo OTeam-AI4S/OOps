@@ -42,3 +42,9 @@ keeps the edge shape, so an empty row has no probability entries.
 | `segment_softmax_csr`      | Normalize edges independently within each row.    |
 | `segment_weighted_sum_csr` | Reduce weighted edge features by row.             |
 | `edge_dot_node`            | Dot edge features with destination node features. |
+
+## Related API
+
+Use [geometry](../geometry/README.md) to select neighbors and [atom mappings](../atom/README.md) for
+atom–token mappings. [Weighted reduction](../reduction/README.md) averages observations along a tensor axis.
+See the [operator overview](../README.md) for shared conventions.
