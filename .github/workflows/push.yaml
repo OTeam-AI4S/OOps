@@ -30,6 +30,8 @@ jobs:
           python -m pip install -e ".[test]"
       - name: Run tests
         run: python -m pytest -m "not lfs" --cov=oops --cov-report=xml
+      - name: Run CPU documentation example
+        run: python -m pytest --doctest-modules --no-cov oops/attention/gate/gate_attention_output.py
 
   build:
     runs-on: ubuntu-latest

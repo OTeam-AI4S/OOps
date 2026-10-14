@@ -1,0 +1,498 @@
+from __future__ import annotations
+
+from contextlib import nullcontext
+from functools import lru_cache
+
+import torch
+from torch import Tensor
+from torch.nn import functional as F
+from torch.utils._python_dispatch import is_in_torch_dispatch_mode
+
+from oops.core import TargetDescriptor
+from oops.core._math import _next_power_of_two
+from oops.runtime import (
+    FLOAT32_DOT_TF32X3,
+    STANDARD_FLOAT_DTYPES,
+    cuda_device_caps,
+    cuda_device_caps_if_needed,
+    cuda_device_context,
+    functorch_transforms_active,
+    is_compiling,
+    matmul_precision,
+    require_triton_dot_precision,
+    shared_memory_budget,
+)
+
+from . import kernel
+from .profiles import SCHEDULES
+from .schedule import GateMultiplyProblem, GatePhaseProfile, GateProjectionConfig, GateProjectionProblem
+
+_OPERATOR = "gate_attention_output"
+_FLOAT32_DOT = FLOAT32_DOT_TF32X3
+
+
+def _kernel_operand(tensor: Tensor) -> Tensor:
+    # Raw pointer loads cannot observe logical view bits.
+    if tensor.is_neg():
+        tensor = tensor.resolve_neg()
+    if tensor.is_conj():
+        tensor = tensor.resolve_conj()
+    return tensor
+
+
+def _geometry(attention: Tensor) -> tuple[int, int, int, int, tuple[int, ...]]:
+
+    shape = (*(1 for _ in range(5 - attention.dim())), *attention.shape)
+    strides = (*(0 for _ in range(5 - attention.dim())), *attention.stride())
+    return shape[1], shape[2], shape[3], shape[4], strides
+
+
+def _select(profile: GatePhaseProfile, problem, device: torch.device):
+    return profile.select(problem, cuda_device_caps_if_needed(device, profile.target_changes_config(problem)))
+
+
+def _attention_gate_multiply_forward_impl(attention: Tensor, logits: Tensor) -> Tensor:
+    with cuda_device_context(attention.device):
+        attention, logits = _kernel_operand(attention), _kernel_operand(logits)
+        output = torch.empty(logits.shape, dtype=logits.dtype, device=logits.device)
+        groups, tokens, heads, width, strides = _geometry(attention)
+        rows = logits.numel() // (heads * width)
+        if rows:
+            problem = GateMultiplyProblem(rows, heads, width, logits.dtype)
+            tile = _select(SCHEDULES.multiply_forward, problem, attention.device)
+            block_rows, block_columns = tile.blocks(problem.gate_channels)
+            kernel._gate_forward.run(
+                attention,
+                logits,
+                output,
+                rows,
+                tokens,
+                groups,
+                strides[0],
+                strides[1],
+                strides[2],
+                strides[3],
+                strides[4],
+                heads,
+                width,
+                block_rows,
+                block_columns,
+                num_warps=tile.num_warps,
+                grid=tile.grid(rows, problem.gate_channels),
+                warmup=False,
+            )
+        return output
+
+
+def _attention_gate_multiply_backward_impl(
+    grad: Tensor, attention: Tensor, logits: Tensor, need_attention: bool, need_logits: bool
+) -> tuple[Tensor | None, Tensor | None]:
+
+    with cuda_device_context(attention.device):
+        grad, logits = _kernel_operand(grad), _kernel_operand(logits).contiguous()
+        if need_logits:
+            attention = _kernel_operand(attention)
+        grad_attention = torch.empty_like(attention, memory_format=torch.contiguous_format) if need_attention else None
+        grad_logits = torch.empty_like(logits) if need_logits else None
+        groups, tokens, heads, width, strides = _geometry(attention)
+        rows = logits.numel() // (heads * width)
+        if rows:
+            problem = GateMultiplyProblem(rows, heads, width, logits.dtype)
+            tile = _select(SCHEDULES.multiply_backward, problem, attention.device)
+            block_rows, block_columns = tile.blocks(problem.gate_channels)
+            kernel._gate_backward.run(
+                attention,
+                logits,
+                grad.contiguous(),
+                grad_attention if grad_attention is not None else logits,
+                grad_logits if grad_logits is not None else logits,
+                rows,
+                tokens,
+                groups,
+                strides[0],
+                strides[1],
+                strides[2],
+                strides[3],
+                strides[4],
+                heads,
+                width,
+                block_rows,
+                block_columns,
+                need_attention,
+                need_logits,
+                num_warps=tile.num_warps,
+                grid=tile.grid(rows, problem.gate_channels),
+                warmup=False,
+            )
+        return grad_attention, grad_logits
+
+
+class _Relabel(torch.autograd.Function):
+    r"""Forward uses ``values``; derivatives follow ``source``."""
+
+    @staticmethod
+    def forward(ctx, values: Tensor, source: Tensor) -> Tensor:
+        del ctx, source
+        return values.detach()
+
+    @staticmethod
+    def backward(ctx, grad: Tensor) -> tuple[None, Tensor]:
+        del ctx
+        return None, grad
+
+
+def _multiply_backward_graph(
+    grad: Tensor, attention: Tensor, logits: Tensor, need_attention: bool, need_logits: bool
+) -> tuple[Tensor | None, Tensor | None]:
+
+    grad_attention, grad_logits = _attention_gate_multiply_backward_impl(
+        grad, attention, logits, need_attention, need_logits
+    )
+    gate = torch.sigmoid(logits)
+    if grad_attention is not None:
+        composed_attention = (grad * gate).reshape(attention.shape)
+        grad_attention = _Relabel.apply(grad_attention, composed_attention)
+    if grad_logits is not None:
+        composed_logits = torch.ops.aten.sigmoid_backward(grad * attention.reshape(logits.shape), gate)
+        grad_logits = _Relabel.apply(grad_logits, composed_logits)
+    return grad_attention, grad_logits
+
+
+def projection_operands(
+    attention: Tensor, single: Tensor, weight: Tensor
+) -> tuple[Tensor, Tensor, GateProjectionProblem] | None:
+
+    dtype = torch.get_autocast_dtype("cuda") if torch.is_autocast_enabled("cuda") else single.dtype
+    if not (
+        attention.is_cuda
+        and dtype in STANDARD_FLOAT_DTYPES
+        and attention.dtype == dtype
+        and (weight.dtype == dtype or torch.is_autocast_enabled("cuda"))
+        and single.dtype in STANDARD_FLOAT_DTYPES
+        and weight.dtype in STANDARD_FLOAT_DTYPES
+    ):
+        return None
+    heads, width = attention.shape[-2:]
+    channels = single.shape[-1]
+    if heads == 0 or width == 0 or channels == 0:
+        return None
+    problem = GateProjectionProblem(
+        attention.numel() // (heads * width), channels, heads, width, dtype, matmul_precision(dtype, _FLOAT32_DOT)
+    )
+    budget = shared_memory_budget(cuda_device_caps(attention.device))
+    plain = (
+        not is_compiling()
+        and all(type(tensor) in (Tensor, torch.nn.Parameter) for tensor in (attention, single, weight))
+        and not is_in_torch_dispatch_mode()
+        and not functorch_transforms_active()
+    )
+    if plain:
+        admitted = _projection_admitted(problem, budget)
+    else:
+        admitted = SCHEDULES.projection_admitted(problem, budget)
+    if not admitted:
+        return None
+    if plain and not torch.is_grad_enabled() and SCHEDULES.fuses(problem):
+        return single, weight, problem
+    return (
+        single if single.dtype == dtype else single.to(dtype),
+        weight if weight.dtype == dtype else weight.to(dtype),
+        problem,
+    )
+
+
+@lru_cache(maxsize=256)
+def _projection_admitted(problem: GateProjectionProblem, shared_memory_bytes: int) -> bool:
+    return SCHEDULES.projection_admitted(problem, shared_memory_bytes)
+
+
+def _projection_problem(attention: Tensor, single: Tensor, precision: str) -> GateProjectionProblem:
+    heads, width = attention.shape[-2:]
+    channels = single.shape[-1]
+    return GateProjectionProblem(single.numel() // channels, channels, heads, width, single.dtype, precision)
+
+
+def _projection_config(problem: GateProjectionProblem, target: TargetDescriptor) -> GateProjectionConfig:
+    profile = SCHEDULES.projection
+    return profile.select(problem, target if profile.target_changes_config(problem) else None)
+
+
+def _launch_projection(
+    entry,
+    problem: GateProjectionProblem,
+    attention: Tensor,
+    single: Tensor,
+    weight: Tensor,
+    output: Tensor,
+    logits: Tensor | None,
+) -> None:
+    with cuda_device_context(attention.device):
+        if problem.rows == 0:
+            return
+        attention, single, weight = (
+            _kernel_operand(attention),
+            _kernel_operand(single),
+            _kernel_operand(weight),
+        )
+        groups, tokens, heads, width, strides = _geometry(attention)
+        single_rows = single.reshape(problem.rows, problem.single_channels)
+        config = _projection_config(problem, cuda_device_caps(attention.device))
+        entry.run(
+            single_rows,
+            weight,
+            attention,
+            output,
+            *(() if logits is None else (logits,)),
+            problem.rows,
+            problem.single_channels,
+            single_rows.stride(0),
+            single_rows.stride(1),
+            weight.stride(0),
+            weight.stride(1),
+            tokens,
+            groups,
+            *strides,
+            heads,
+            width,
+            config.block_rows,
+            min(config.block_gate, max(16, _next_power_of_two(problem.gate_channels))),
+            config.block_reduction,
+            input_precision=problem.input_precision,
+            num_warps=config.num_warps,
+            num_stages=config.num_stages,
+            grid=config.grid(problem.rows, problem.gate_channels),
+            warmup=False,
+        )
+
+
+def _native_logits(single: Tensor, weight: Tensor) -> Tensor:
+    # Ambient autocast must not recast already-prepared operands.
+    autocast = torch.autocast("cuda", enabled=False) if torch.is_autocast_enabled("cuda") else nullcontext()
+    with autocast:
+        return F.linear(single, weight).contiguous()
+
+
+def _gated_shape(single: Tensor, weight: Tensor) -> tuple[int, ...]:
+    return (*single.shape[:-1], weight.shape[0])
+
+
+def _projection_forward_impl(
+    attention: Tensor, single: Tensor, weight: Tensor, precision: str, problem: GateProjectionProblem | None = None
+) -> tuple[Tensor, Tensor]:
+
+    if problem is None:
+        problem = _projection_problem(attention, single, precision)
+    if not SCHEDULES.fuses(problem):
+        logits = _native_logits(single, weight)
+        return _attention_gate_multiply_forward_impl(attention, logits), logits
+    output = torch.empty(_gated_shape(single, weight), dtype=single.dtype, device=single.device)
+    logits = torch.empty_like(output)
+    _launch_projection(kernel._gate_projection_forward, problem, attention, single, weight, output, logits)
+    return output, logits
+
+
+def _projection_inference_impl(
+    attention: Tensor, single: Tensor, weight: Tensor, precision: str, problem: GateProjectionProblem | None = None
+) -> Tensor:
+
+    if problem is None:
+        problem = _projection_problem(attention, single, precision)
+    if not SCHEDULES.fuses(problem):
+        return _attention_gate_multiply_forward_impl(attention, _native_logits(single, weight))
+    output = torch.empty(_gated_shape(single, weight), dtype=problem.compute_dtype, device=single.device)
+    _launch_projection(kernel._gate_projection_inference, problem, attention, single, weight, output, None)
+    return output
+
+
+def _projection_linear_gradients(grad_logits, single, weight, need_single, need_weight):
+    autocast = torch.autocast("cuda", enabled=False) if torch.is_autocast_enabled("cuda") else nullcontext()
+    with autocast:
+        grad_single = torch.matmul(grad_logits, weight) if need_single else None
+        grad_weight = (
+            grad_logits.reshape(-1, weight.shape[0]).t().mm(single.reshape(-1, weight.shape[1]))
+            if need_weight
+            else None
+        )
+    return grad_single, grad_weight
+
+
+def _projection_backward_impl(
+    grad: Tensor,
+    attention: Tensor,
+    single: Tensor,
+    weight: Tensor,
+    logits: Tensor,
+    need_attention: bool,
+    need_single: bool,
+    need_weight: bool,
+) -> tuple[Tensor | None, Tensor | None, Tensor | None]:
+
+    grad_attention, grad_logits = _attention_gate_multiply_backward_impl(
+        grad, attention, logits, need_attention, need_single or need_weight
+    )
+    if grad_logits is None:
+        return grad_attention, None, None
+    grad_single, grad_weight = _projection_linear_gradients(grad_logits, single, weight, need_single, need_weight)
+    return grad_attention if need_attention else None, grad_single, grad_weight
+
+
+def _projection_backward_graph(
+    grad: Tensor,
+    attention: Tensor,
+    single: Tensor,
+    weight: Tensor,
+    logits: Tensor,
+    need_attention: bool,
+    need_single: bool,
+    need_weight: bool,
+) -> tuple[Tensor | None, Tensor | None, Tensor | None]:
+
+    if need_single or need_weight:
+        logits = _Relabel.apply(logits, _native_logits(single, weight))
+    grad_attention, grad_logits = _multiply_backward_graph(
+        grad, attention, logits, need_attention, need_single or need_weight
+    )
+    if grad_logits is None:
+        return grad_attention, None, None
+    grad_single, grad_weight = _projection_linear_gradients(grad_logits, single, weight, need_single, need_weight)
+    return grad_attention if need_attention else None, grad_single, grad_weight
+
+
+@torch.library.custom_op(
+    "ooperators::_attention_gate_projection_forward",
+    mutates_args=(),
+    device_types="cuda",
+    schema="(Tensor attention, Tensor single, Tensor weight, str precision) -> (Tensor, Tensor)",
+)
+def _attention_gate_projection_forward(
+    attention: Tensor, single: Tensor, weight: Tensor, precision: str, problem: GateProjectionProblem | None = None
+) -> tuple[Tensor, Tensor]:
+    require_triton_dot_precision(_OPERATOR, single.dtype, _FLOAT32_DOT, precision)
+    return _projection_forward_impl(attention, single, weight, precision)
+
+
+@_attention_gate_projection_forward.register_fake
+def _attention_gate_projection_forward_fake(
+    attention: Tensor, single: Tensor, weight: Tensor, precision: str, problem: GateProjectionProblem | None = None
+) -> tuple[Tensor, Tensor]:
+    del attention, precision
+    output = single.new_empty(_gated_shape(single, weight))
+    return output, torch.empty_like(output)
+
+
+@torch.library.custom_op(
+    "ooperators::_attention_gate_projection_inference",
+    mutates_args=(),
+    device_types="cuda",
+    schema="(Tensor attention, Tensor single, Tensor weight, str precision) -> Tensor",
+)
+def _attention_gate_projection_inference(attention: Tensor, single: Tensor, weight: Tensor, precision: str) -> Tensor:
+    require_triton_dot_precision(_OPERATOR, single.dtype, _FLOAT32_DOT, precision)
+    return _projection_inference_impl(attention, single, weight, precision)
+
+
+@_attention_gate_projection_inference.register_fake
+def _attention_gate_projection_inference_fake(
+    attention: Tensor, single: Tensor, weight: Tensor, precision: str
+) -> Tensor:
+    del attention, precision
+    return single.new_empty(_gated_shape(single, weight))
+
+
+@torch.library.custom_op(
+    "ooperators::_attention_gate_projection_backward",
+    mutates_args=(),
+    device_types="cuda",
+    schema=(
+        "(Tensor grad, Tensor attention, Tensor single, Tensor weight, Tensor logits, bool need_attention, "
+        "bool need_single, bool need_weight) -> (Tensor?, Tensor?, Tensor?)"
+    ),
+)
+def _attention_gate_projection_backward(
+    grad: Tensor,
+    attention: Tensor,
+    single: Tensor,
+    weight: Tensor,
+    logits: Tensor,
+    need_attention: bool,
+    need_single: bool,
+    need_weight: bool,
+) -> tuple[Tensor | None, Tensor | None, Tensor | None]:
+    return _projection_backward_impl(grad, attention, single, weight, logits, need_attention, need_single, need_weight)
+
+
+@_attention_gate_projection_backward.register_fake
+def _attention_gate_projection_backward_fake(
+    grad: Tensor,
+    attention: Tensor,
+    single: Tensor,
+    weight: Tensor,
+    logits: Tensor,
+    need_attention: bool,
+    need_single: bool,
+    need_weight: bool,
+) -> tuple[Tensor | None, Tensor | None, Tensor | None]:
+    del grad, logits
+    return (
+        torch.empty(attention.shape, dtype=attention.dtype, device=attention.device) if need_attention else None,
+        torch.empty_like(single) if need_single else None,
+        torch.empty_like(weight) if need_weight else None,
+    )
+
+
+def _projection_setup_context(ctx, inputs, output) -> None:
+    attention, single, weight, _precision = inputs
+    _gated, logits = output
+    _save_projection_context(ctx, attention, single, weight, logits)
+    ctx.mark_non_differentiable(logits)
+
+
+def _save_projection_context(ctx, attention: Tensor, single: Tensor, weight: Tensor, logits: Tensor) -> None:
+    if not ctx.needs_input_grad[1] and not ctx.needs_input_grad[2]:
+        attention = logits.unflatten(-1, attention.shape[-2:])
+        single = weight = logits
+    ctx.save_for_backward(attention, single, weight, logits)
+
+
+def _projection_autograd_backward(ctx, grad: Tensor, _grad_logits: Tensor | None):
+    attention, single, weight, logits = ctx.saved_tensors
+    needs = tuple(ctx.needs_input_grad[:3])
+    if torch.is_grad_enabled():
+        return (*_projection_backward_graph(grad, attention, single, weight, logits, *needs), None)
+    return (*_attention_gate_projection_backward(grad, attention, single, weight, logits, *needs), None)
+
+
+torch.library.register_autograd(
+    _attention_gate_projection_forward, _projection_autograd_backward, setup_context=_projection_setup_context
+)
+
+
+class _GateProjection(torch.autograd.Function):
+    @staticmethod
+    def forward(
+        ctx, attention: Tensor, single: Tensor, weight: Tensor, precision: str, problem: GateProjectionProblem
+    ) -> Tensor:
+        output, logits = _projection_forward_impl(attention, single, weight, precision, problem)
+        _save_projection_context(ctx, attention, single, weight, logits)
+        return output
+
+    @staticmethod
+    def backward(ctx, grad: Tensor):
+        attention, single, weight, logits = ctx.saved_tensors
+        ctx.maybe_clear_saved_tensors()
+        needs = tuple(ctx.needs_input_grad[:3])
+        if torch.is_grad_enabled():
+            return (*_projection_backward_graph(grad, attention, single, weight, logits, *needs), None, None)
+        return (*_projection_backward_impl(grad, attention, single, weight, logits, *needs), None, None)
+
+
+def project_gate(attention: Tensor, single: Tensor, weight: Tensor, problem: GateProjectionProblem) -> Tensor:
+    precision = problem.input_precision
+    needs_grad = torch.is_grad_enabled() and (attention.requires_grad or single.requires_grad or weight.requires_grad)
+    if is_compiling():
+        if needs_grad:
+            return _attention_gate_projection_forward(attention, single, weight, precision)[0]
+        return _attention_gate_projection_inference(attention, single, weight, precision)
+    if needs_grad:
+        return _GateProjection.apply(attention, single, weight, precision, problem)
+    return _projection_inference_impl(attention, single, weight, precision, problem)
