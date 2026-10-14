@@ -43,23 +43,3 @@ def tolerance() -> Callable[[torch.dtype], Tolerance]:
         return {"atol": 1e-12, "rtol": 1e-12}
 
     return get
-
-
-@pytest.fixture
-def csr_reduce() -> Callable[..., torch.Tensor]:
-    def reduce(
-        values: torch.Tensor,
-        offsets: torch.Tensor,
-        segments: int,
-        reduction: Callable[[torch.Tensor], torch.Tensor],
-        *,
-        fill: float = 0.0,
-    ) -> torch.Tensor:
-        bounds = offsets.cpu().tolist()
-        output = values.new_full((segments, *values.shape[1:]), fill)
-        for segment, (start, stop) in enumerate(zip(bounds[:-1], bounds[1:])):
-            if start != stop:
-                output[segment] = reduction(values[start:stop])
-        return output
-
-    return reduce

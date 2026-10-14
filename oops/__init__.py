@@ -27,17 +27,6 @@ from .msa import categorical_msa_projection
 from .normalization import LayerNorm, layer_norm
 from .pair import triangle_multiplication
 
-__all__ = [
-    "categorical_msa_projection",
-    "__version__",
-    "OOpsUnsupportedError",
-    "LayerNorm",
-    "layer_norm",
-    "triangle_multiplication",
-    "gate_attention_output",
-    "pair_bias_attention",
-    "gated_pair_bias_attention",
-    "triangle_attention",
-]
+from .sparse import CSRGraph, regular_csr_graph, validate_csr_metadata
 
-_warn_internal_users()
+__all__ = ['categorical_msa_projection', '__version__', 'OOpsUnsupportedError', 'LayerNorm', 'layer_norm', 'triangle_multiplication', 'gate_attention_output', 'pair_bias_attention', 'gated_pair_bias_attention', 'triangle_attention', 'CSRGraph', 'regular_csr_graph', 'validate_csr_metadata']
