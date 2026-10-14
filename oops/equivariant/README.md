@@ -30,3 +30,8 @@ The concatenated result has final width `(lmax + 1)**2`.
 | --------------------- | ------------------------------------------------------- |
 | `spherical_harmonics` | Evaluate real harmonics for `0 <= lmax <= 2`.           |
 | `se3_basis`           | Build RFdiffusion-compatible bases with `max_degree=1`. |
+
+## Related API
+
+See [geometry](../geometry/README.md) for neighbor selection and vector lengths, and
+[sparse edges](../sparse/README.md) for organizing edge features. Return to the [operator overview](../README.md).
