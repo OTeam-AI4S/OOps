@@ -2,5 +2,7 @@ from __future__ import annotations
 
 from .csr import CSRGraph, regular_csr_graph, validate_csr_metadata
 
+from .segment import segment_sum_csr
 
-__all__ = ['CSRGraph', 'regular_csr_graph', 'validate_csr_metadata']
+
+__all__ = ['CSRGraph', 'regular_csr_graph', 'validate_csr_metadata', 'segment_sum_csr']

@@ -18,4 +18,6 @@ from .atom import atom_to_token_mean
 
 from .atom import atom_to_token_sum
 
-__all__ = ['categorical_msa_projection', '__version__', 'OOpsUnsupportedError', 'LayerNorm', 'layer_norm', 'triangle_multiplication', 'gate_attention_output', 'pair_bias_attention', 'gated_pair_bias_attention', 'triangle_attention', 'CSRGraph', 'regular_csr_graph', 'validate_csr_metadata', 'AtomTokenLayout', 'validate_atom_to_token', 'token_pair_to_atom_window_gather', 'token_to_atom_broadcast', 'atom_to_token_mean', 'atom_to_token_sum']
+from .sparse import segment_sum_csr
+
+__all__ = ['categorical_msa_projection', '__version__', 'OOpsUnsupportedError', 'LayerNorm', 'layer_norm', 'triangle_multiplication', 'gate_attention_output', 'pair_bias_attention', 'gated_pair_bias_attention', 'triangle_attention', 'CSRGraph', 'regular_csr_graph', 'validate_csr_metadata', 'AtomTokenLayout', 'validate_atom_to_token', 'token_pair_to_atom_window_gather', 'token_to_atom_broadcast', 'atom_to_token_mean', 'atom_to_token_sum', 'segment_sum_csr']
