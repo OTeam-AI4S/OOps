@@ -3,7 +3,8 @@
 > [!TIP]
 > More OOps, zero OOMs.
 
-OOps 为生物分子模型提供 PyTorch 算子。它是 [OFoldX](https://github.com/OTeam-AI4S/OFoldX) 的算子后端，也可直接用于 PyTorch 程序。
+OOps 为生物分子模型提供 PyTorch 算子，涵盖注意力、pair 更新、原子与 token 转换、稀疏图聚合和结构损失。
+它是 [OFoldX](https://github.com/OTeam-AI4S/OFoldX) 的算子后端，也可直接用于 PyTorch 程序。
 
 ## 快速开始
 

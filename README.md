@@ -3,7 +3,8 @@
 > [!TIP]
 > More OOps, zero OOMs.
 
-OOps provides PyTorch operators for biomolecular models. It is the operator backend for
+OOps provides PyTorch operators for biomolecular models, including attention, pair updates, atom–token transfer,
+sparse graph aggregation, and structural losses. It is the operator backend for
 [OFoldX](https://github.com/OTeam-AI4S/OFoldX) and can also be used directly in PyTorch programs.
 
 ## Get Started
