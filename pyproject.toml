@@ -48,8 +48,10 @@ dependencies = [
 optional-dependencies.docs = [
   "markdown-gfm-admonition",
   "mkdocs>=1.4",
+  "mkdocs-autorefs",
   "mkdocs-material",
   "mkdocs-static-i18n",
+  "mkdocstrings[python]",
 ]
 optional-dependencies.test = [
   "pytest",

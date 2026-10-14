@@ -1,6 +1,7 @@
 site_name: OOps
 site_url: https://oops.valhalla.technology/
 docs_dir: docs
+site_dir: build/docs
 
 exclude_docs: |
   /generate_docs.py
@@ -11,6 +12,7 @@ hooks:
 
 nav:
   - Home: index.md
+  - API: api.md
   - About:
       - License: about/license.md
       - License FAQ: about/license-faq.md
@@ -22,6 +24,20 @@ theme:
 
 plugins:
   - search
+  - autorefs:
+      resolve_closest: true
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            allow_inspection: false
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            heading_level: 2
+            docstring_options:
+              returns_multiple_items: false
   - i18n:
       docs_structure: suffix
       fallback_to_default: true
@@ -37,6 +53,7 @@ plugins:
           name: 中文
           nav_translations:
             Home: 首页
+            API: API
             About: 关于
             Privacy Notice: 隐私声明
             License: 许可证
@@ -75,5 +92,6 @@ watch:
   - license.zh.md
   - license-faq.md
   - license-faq.zh.md
+  - oops
   - privacy.md
   - privacy.zh.md
