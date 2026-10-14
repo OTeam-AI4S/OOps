@@ -9,6 +9,7 @@ hooks:
 nav:
   - Home: index.md
   - Operators: []
+  - Examples: examples/index.md
   - About:
       - License: about/license.md
       - License FAQ: about/license-faq.md
@@ -85,6 +86,7 @@ markdown_extensions:
       permalink: true
 
 watch:
+  - ../examples/
   - ../README.md
   - ../README.zh.md
   - ../license.md

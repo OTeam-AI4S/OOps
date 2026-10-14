@@ -13,6 +13,32 @@ OOps 为生物分子模型提供 PyTorch 算子。它是 [OFoldX](https://github
 pip install ooperators
 ```
 
+对普通张量应用 `LayerNorm`：
+
+```python
+import torch
+from oops import LayerNorm
+
+layer = LayerNorm(16)
+input = torch.randn(2, 4, 16, requires_grad=True)
+output = layer(input)
+output.square().mean().backward()
+```
+
+使用 DanLing `NestedTensor` 表示变长序列：
+
+```python
+import torch
+from danling import NestedTensor
+from oops import LayerNorm
+
+input = NestedTensor([torch.randn(length, 16, requires_grad=True) for length in (3, 5)], ragged_dims=(0,))
+output = LayerNorm(16)(input)
+output.square().mean().backward()
+```
+
+更多用法请参阅[算子指南](oops)和[示例](examples)。
+
 如果需要尚未发布的修改，可以从源码安装：
 
 ```shell
