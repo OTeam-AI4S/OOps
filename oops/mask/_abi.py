@@ -1,0 +1,5 @@
+from __future__ import annotations
+
+PACKED_MASK_BLOCK_MSA = 128
+PACKED_MASK_BLOCK_TOKENS = 64
+PACKED_PAIR_MASK_BLOCK_TOKENS = 32
