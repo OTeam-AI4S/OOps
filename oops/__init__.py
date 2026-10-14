@@ -1,7 +1,7 @@
 from ._edition import _warn_internal_users
 from ._errors import OOpsUnsupportedError
 from ._version import __version__
-from .attention import gate_attention_output, pair_bias_attention
+from .attention import gate_attention_output, gated_pair_bias_attention, pair_bias_attention
 from .normalization import LayerNorm, layer_norm
 from .pair import triangle_multiplication
 
@@ -13,6 +13,7 @@ __all__ = [
     "triangle_multiplication",
     "gate_attention_output",
     "pair_bias_attention",
+    "gated_pair_bias_attention",
 ]
 
 _warn_internal_users()
