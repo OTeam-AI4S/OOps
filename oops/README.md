@@ -7,6 +7,7 @@ atoms, or sparse edges. Public functions can be imported from `oops` or their fa
 
 | Family                                   | When to Use                                              |
 | ---------------------------------------- | -------------------------------------------------------- |
+| [Pair](pair/README.md)                   | Build incoming or outgoing triangle updates.             |
 | [Normalization](normalization/README.md) | Normalize feature channels through a module or function. |
 
 ## OFoldX Integration
