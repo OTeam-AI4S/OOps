@@ -29,4 +29,6 @@ from .pair import triangle_multiplication
 
 from .sparse import CSRGraph, regular_csr_graph, validate_csr_metadata
 
-__all__ = ['categorical_msa_projection', '__version__', 'OOpsUnsupportedError', 'LayerNorm', 'layer_norm', 'triangle_multiplication', 'gate_attention_output', 'pair_bias_attention', 'gated_pair_bias_attention', 'triangle_attention', 'CSRGraph', 'regular_csr_graph', 'validate_csr_metadata']
+from .atom import AtomTokenLayout, validate_atom_to_token
+
+__all__ = ['categorical_msa_projection', '__version__', 'OOpsUnsupportedError', 'LayerNorm', 'layer_norm', 'triangle_multiplication', 'gate_attention_output', 'pair_bias_attention', 'gated_pair_bias_attention', 'triangle_attention', 'CSRGraph', 'regular_csr_graph', 'validate_csr_metadata', 'AtomTokenLayout', 'validate_atom_to_token']
