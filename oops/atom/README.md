@@ -40,3 +40,9 @@ so their features come from that token rather than being zero-filled.
 | `atom_to_token_sum`                | Sum weighted atom features into tokens.           |
 | `atom_to_token_mean`               | Average atom features within each token.          |
 | `token_pair_to_atom_window_gather` | Prepare local atom-pair windows from token pairs. |
+
+## Related API
+
+See [sparse graphs](../sparse/README.md) for related metadata, [attention](../attention/README.md) for the
+consumer of gathered windows, and [pair updates](../pair/README.md) for pair features. Return to the
+[operator overview](../README.md).
