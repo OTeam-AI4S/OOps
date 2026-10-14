@@ -34,3 +34,9 @@ An empty MSA axis yields false token validity, and an empty token axis stays emp
 | `token_mask_from_msa_mask`  | Find tokens observed in at least one alignment row.  |
 | `pair_mask_from_token_mask` | Keep pairs whose two tokens are valid.               |
 | `pair_mask_from_msa_mask`   | Build token-pair validity directly from an MSA mask. |
+
+## Related API
+
+See [attention](../attention/README.md) for keep-mask consumers, [MSA operators](../msa/README.md) for
+alignment features, and [pair updates](../pair/README.md) for floating pair weights. Return to the
+[operator overview](../README.md).
