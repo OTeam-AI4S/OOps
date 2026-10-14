@@ -11,6 +11,7 @@ atoms, or sparse edges. Public functions can be imported from `oops` or their fa
 | [Pair](pair/README.md)                   | Build incoming or outgoing triangle updates.                  |
 | [Normalization](normalization/README.md) | Normalize feature channels through a module or function.      |
 | [Atom](atom/README.md)                   | Transfer between atom/token features and gather atom windows. |
+| [Sparse](sparse/README.md)               | Group edges and aggregate features within CSR rows.           |
 
 ## OFoldX Integration
 
