@@ -38,3 +38,9 @@ returns zero. Pair bias is additive.
 | `triangle_attention`        | Attend over the columns of each pair-feature row.              |
 | `gate_attention_output`     | Gate and project existing attention values.                    |
 | `gated_pair_bias_attention` | Compute pair-bias attention and its gated projection together. |
+
+## Related API
+
+[Pair updates](../pair/README.md) and [MSA operators](../msa/README.md) build related pair features.
+Use the [mask functions](../mask/README.md) to prepare boolean validity, or return to the
+[operator overview](../README.md).

@@ -45,3 +45,9 @@ choices define the triangle update together with the contraction direction.
 | API                       | When to Use                                                 |
 | ------------------------- | ----------------------------------------------------------- |
 | `triangle_multiplication` | Compute an incoming or outgoing multiplicative pair update. |
+
+## Related API
+
+[Triangle attention](../attention/README.md) and [MSA outer-product mean](../msa/README.md) also update pair
+features. See [normalization](../normalization/README.md) for standalone `LayerNorm` and the
+[operator overview](../README.md) for shared conventions.

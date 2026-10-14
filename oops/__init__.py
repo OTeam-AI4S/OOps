@@ -42,18 +42,18 @@ from .losses import (
     smooth_lddt_pair_indices,
 )
 from .mask import pair_mask_from_msa_mask, pair_mask_from_token_mask, token_mask_from_msa_mask
-from .msa import categorical_msa_projection
+from .msa import categorical_msa_projection, outer_product_mean
 from .normalization import LayerNorm, layer_norm
 from .pair import triangle_multiplication
 from .reduction import weighted_mean
 from .sparse import (
     CSRGraph,
-    segment_weighted_sum_csr,
     edge_dot_node,
     regular_csr_graph,
     segment_max_csr,
     segment_softmax_csr,
     segment_sum_csr,
+    segment_weighted_sum_csr,
     validate_csr_metadata,
 )
 
@@ -61,6 +61,7 @@ _warn_internal_users()
 
 __all__ = [
     "categorical_msa_projection",
+    "outer_product_mean",
     "__version__",
     "OOpsUnsupportedError",
     "LayerNorm",
@@ -82,8 +83,8 @@ __all__ = [
     "segment_sum_csr",
     "segment_max_csr",
     "segment_softmax_csr",
-    "edge_dot_node",
     "segment_weighted_sum_csr",
+    "edge_dot_node",
     "cross_entropy",
     "distogram_cross_entropy",
     "smooth_lddt_loss_dense",

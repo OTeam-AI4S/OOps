@@ -32,3 +32,9 @@ Normalization operates over the final feature axis.
 | ------------ | --------------------------------------------------- |
 | `LayerNorm`  | Use a PyTorch-compatible normalization module.      |
 | `layer_norm` | Normalize features with explicit affine parameters. |
+
+## Related API
+
+[Attention](../attention/README.md), [pair updates](../pair/README.md), and
+[MSA operators](../msa/README.md) use related normalization steps. See the
+[operator overview](../README.md) for shared conventions.
