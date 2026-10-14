@@ -14,6 +14,32 @@ Install from PyPI:
 pip install ooperators
 ```
 
+Use `LayerNorm` with a dense tensor:
+
+```python
+import torch
+from oops import LayerNorm
+
+layer = LayerNorm(16)
+input = torch.randn(2, 4, 16, requires_grad=True)
+output = layer(input)
+output.square().mean().backward()
+```
+
+Use DanLing `NestedTensor` for variable-length sequences:
+
+```python
+import torch
+from danling import NestedTensor
+from oops import LayerNorm
+
+input = NestedTensor([torch.randn(length, 16, requires_grad=True) for length in (3, 5)], ragged_dims=(0,))
+output = LayerNorm(16)(input)
+output.square().mean().backward()
+```
+
+See the [operator guide](oops) and [examples](examples) for more usage.
+
 Install the latest source version when you need unreleased changes:
 
 ```shell

@@ -20,8 +20,10 @@
 # <https://oops.valtech.ai/about/license-faq/>.
 
 from ._edition import _warn_internal_users
+from ._errors import OOpsUnsupportedError
 from ._version import __version__
+from .normalization import LayerNorm, layer_norm
 
-__all__ = ["__version__"]
+__all__ = ["__version__", "OOpsUnsupportedError", "LayerNorm", "layer_norm"]
 
 _warn_internal_users()
