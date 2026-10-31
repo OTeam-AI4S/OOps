@@ -42,6 +42,24 @@ jobs:
           python -m pip install -e ".[test]"
       - name: Run tests
         run: python -m pytest -m "not lfs" --cov=oops --cov-report=xml
+      - name: Upload coverage reports to Codecov
+        if: >-
+          matrix.python-version == '3.14' &&
+          github.repository == 'OTeam-AI4S/OOps' &&
+          (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+      - name: Upload coverage reports to Codacy
+        if: >-
+          matrix.python-version == '3.14' &&
+          github.repository == 'OTeam-AI4S/OOps' &&
+          (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: codacy/codacy-coverage-reporter-action@v1
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: coverage.xml
       - name: Run CPU documentation example
         run: python -m pytest --doctest-modules --no-cov oops/attention/gate/gate_attention_output.py
 
